@@ -85,6 +85,15 @@ def get_details(url, country_name):
         stamp['raw_text'] = raw_text
     except:
         stamp['raw_text'] = None
+        
+    try:
+        sold_out = html.find_all("img", {"alt":"Sold Out"})
+        if sold_out:
+            stamp['sold_out'] = '1'
+        else:
+            stamp['sold_out'] = '0'
+    except:
+        stamp['sold_out'] = None    
 
     stamp['currency'] = "GBP"
     
@@ -149,7 +158,9 @@ def get_page_items(url):
     try:
         for item in html.select('.itemTitle a'):
             item = item.get('href').replace('&amp;', '&')
-            items.append(item)
+            item_parts = item.split('&zenid=')
+            item_href = item_parts[0]
+            items.append(item_href)
     except:
         pass
 
