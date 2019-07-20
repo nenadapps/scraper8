@@ -89,11 +89,13 @@ def get_details(url, country_name):
     try:
         sold_out = html.find_all("img", {"alt":"Sold Out"})
         if sold_out:
-            stamp['sold_out'] = '1'
+            stamp['sold'] = 1
+            stamp['number'] = 0
         else:
-            stamp['sold_out'] = '0'
+            stamp['sold'] = 0
+            stamp['number']=None
     except:
-        stamp['sold_out'] = None    
+        stamp['sold'] = None    
 
     stamp['currency'] = "GBP"
     
@@ -112,14 +114,14 @@ def get_details(url, country_name):
     stamp['image_urls'] = images
     
     try:
-	    temp = title.split(' ')
+	    temp = stamp['title'].split(' ')
 	    stamp['year'] = temp[1]
 	    stamp['face_value'] = temp[2]
 	    stamp['SG'] = temp[-1].replace('.','').replace('SG','')
-	except:
-		stamp['year']=None
-		stamp['face_value']=None
-		stamp['SG']=None
+    except:
+        stamp['year']=None
+        stamp['face_value']=None
+        stamp['SG']=None
 
     # scrape date in format YYYY-MM-DD
     scrape_date = datetime.date.today().strftime('%Y-%m-%d')
