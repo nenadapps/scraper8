@@ -1,10 +1,12 @@
-from fake_useragent import UserAgent
+# Kayatana
 import datetime
 from random import randint, shuffle
 from time import sleep
 from urllib.request import Request, urlopen
 import bs4
+'''
 import requests
+from fake_useragent import UserAgent
 import sqlite3
 import os
 import shutil
@@ -40,11 +42,12 @@ def showmyip():
         print(ip_address)
     except:
         print('Issue with printing IP')
+'''
 
 def get_html(url):
     html_content = ''
     try:
-        req = Request(url, headers=hdr)
+        req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         html_page = urlopen(req).read()
         html_content = bs4.BeautifulSoup(html_page, "html.parser")
     except:
@@ -82,9 +85,17 @@ def get_details(url, country_name):
 
     try:
         raw_text = html.find_all("div", {"id":"productDescription"})[0].get_text().strip()
-        stamp['raw_text'] = raw_text
+        stamp['raw_text'] = raw_text.replace('"',"'")
     except:
         stamp['raw_text'] = None
+    
+    if stamp['raw_text'] == None:
+    	try:
+    		stamp['raw_text'] = stamp['sku']
+    	except:
+    	    pass
+    else:
+    	pass
         
     try:
         sold_out = html.find_all("img", {"alt":"Sold Out"})
@@ -95,7 +106,8 @@ def get_details(url, country_name):
             stamp['sold'] = 0
             stamp['number']=None
     except:
-        stamp['sold'] = None    
+        stamp['sold'] = None
+        stamp['number']=None
 
     stamp['currency'] = "GBP"
     
@@ -127,18 +139,10 @@ def get_details(url, country_name):
     scrape_date = datetime.date.today().strftime('%Y-%m-%d')
     stamp['scrape_date'] = scrape_date
     
-    # STUFF that detects if sold is on page
-    # IF SOLD ON PAGE
-    #   stamp['sold'] = 1
-    #   stamp['number']=0
-    # ELSE:
-    #   stamp['sold']=None
-    #   stamp['number']=None
-    
     stamp['url'] = url
     print(stamp)
     print('+++++++++++++')
-    sleep(randint(25, 65))
+    sleep(randint(45, 125))
     return stamp
 
 def get_page_items(url):
@@ -171,9 +175,7 @@ def get_page_items(url):
         next_url = next_url.replace('&amp;', '&')
     except:
         pass
-
-    shuffle(items)
-
+    shuffle(list(set(items)))
     return items, next_url, country_name
 
 def get_countries(url, class_name):
@@ -191,9 +193,8 @@ def get_countries(url, class_name):
             items.append(item_link)
     except:
         pass
-
     return items
-
+'''
 def file_names(stamp):
     file_name = []
     rand_string = "RAND_"+str(randint(0,100000))
@@ -202,14 +203,14 @@ def file_names(stamp):
 
 def query_for_previous(stamp):
     # CHECKING IF Stamp IN DB
-    os.chdir("/Volumes/stamps_copy/")
+    os.chdir("/Volumes/Stamps/")
     conn1 = sqlite3.connect('Reference_data.db')
     c = conn1.cursor()
     col_nm = 'url'
     col_nm2 = 'raw_text'
     unique = stamp['url']
     unique2 = stamp['raw_text']
-    c.execute('SELECT * FROM kayatana WHERE "{col_nm}" LIKE "{unique}%" AND "{col_nm2}" LIKE "{unique2}%"')
+    c.execute('SELECT * FROM kayatana WHERE "{cn}" LIKE "{un}%" AND "{cn2}" LIKE "{un2}%"'.format(cn=col_nm, cn2=col_nm2, un=unique, un2=unique2))
     all_rows = c.fetchall()
     conn1.close()
     price_update=[]
@@ -231,19 +232,22 @@ def query_for_previous(stamp):
         print (" ")
         #url_count(count)
         sleep(randint(10,25))
+        next_step='continue'
         pass
     else:
-        os.chdir("/Volumes/stamps_copy/")
+        os.chdir("/Volumes/Stamps/")
         conn2 = sqlite3.connect('Reference_data.db')
         c2 = conn2.cursor()
         c2.executemany("""INSERT INTO price_list (url, raw_text, scrape_date, price, currency, sold, number) VALUES(?,?,?,?,?,?,?)""", price_update)
         conn2.commit()
         conn2.close()
+        next_step='pass'
     print("Price Updated")
+    return (next_step)
     
 def db_update_image_download(stamp):  
     req = requests.Session()
-    directory = "/Volumes/stamps_copy/stamps/kayatana/" + str(datetime.datetime.today().strftime('%Y-%m-%d')) +"/"
+    directory = "/Volumes/Stamps/stamps/kayatana/" + str(datetime.datetime.today().strftime('%Y-%m-%d')) +"/"
     image_paths = []
     f_names = file_names(stamp)
     image_paths = [directory + f_names[i] for i in range(len(f_names))]
@@ -281,7 +285,7 @@ def db_update_image_download(stamp):
         stamp['face_value'],
         stamp['scrape_date'],
         stamp['image_paths']))
-    os.chdir("/Volumes/stamps_copy/")
+    os.chdir("/Volumes/Stamps/")
     conn = sqlite3.connect('Reference_data.db')
     conn.text_factory = str
     cur = conn.cursor()
@@ -293,34 +297,45 @@ def db_update_image_download(stamp):
     print ("++++++++++++")
     print (" ")
     sleep(randint(45,115))
-
+'''
 # start url
 start_url = 'http://kayatana.com'
 
-connectTor()
-showmyip()
-req = requests.Session()
+#connectTor()
 
 # loop through all countries
 count = 0
 countries = get_countries(start_url, 'category-top')
+shuffle(list(set(countries)))
 for country in countries:
 	count += 1
 	countries2 = get_countries(country, 'category-products')
+	shuffle(list(set(countries2)))
 	for country2 in countries2:
 		while(country2):
 			count += 1
 			page_items, country2, country_name = get_page_items(country2)
 			# loop through all items on current page
+			shuffle(list(set(page_items)))
 			for page_item in page_items:
 				count += 1
 				if count > randint(75,156):
 					sleep(randint(500,2000))
-					connectTor()
-					showmyip()
+					#renew_tor()
+					#showmyip()
 					count = 0
 				else:
 					pass
 				stamp = get_details(page_item, country_name)
-				query_for_previous(stamp)
-				db_update_image_download(stamp)
+				'''
+				next_step = query_for_previous(stamp)
+				if next_step == 'continue':
+					print('Only updating price')
+					continue
+				elif next_step == 'pass':
+					print('Inserting the item')
+					pass
+				else:
+					break
+				db_update_image_download(stamp)'''
+print('Scrape Complete')
